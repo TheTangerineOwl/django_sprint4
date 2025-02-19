@@ -1,0 +1,271 @@
+"""CBV-представления для приложения blog."""
+
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import PasswordResetView
+# from django.contrib.auth.forms import UserCreationForm
+from django.views.generic import (DetailView, ListView, CreateView,
+                                  DeleteView, UpdateView)
+from django.utils import timezone
+from django.db.models import Count
+from django.http import Http404
+from django.urls import reverse_lazy
+from django.core.mail import send_mail
+
+from .models import Category, Post, Comment, User
+from .forms import CommentForm, PostForm, UserForm, UserRegistrationForm
+
+
+PAGES = 5
+
+
+class PostMixin:
+    def get_queryset(self):
+        return Post.objects.select_related(
+            'category',
+            'location',
+            'author'
+        ).annotate(comment_count=Count('comments')).filter(
+            is_published=True,
+            pub_date__lte=timezone.now()
+        ).order_by('-pub_date')
+
+
+class PostListView(PostMixin, ListView):
+
+    model = Post
+
+    template_name = 'blog/index.html'
+    context_object_name = 'page_obj'
+    paginate_by = PAGES
+
+    def get_queryset(self):
+        return super().get_queryset().filter(category__is_published=True)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # context['page_obj'] = context['object_list']
+        # context['page_obj'] = self.get_queryset()
+        # context['post_count'] = self.get_queryset().count()
+        return context
+
+
+class PostDetailView(DetailView):
+    model = Post
+    # post = None
+    template_name = 'blog/detail.html'
+    context_object_name = 'post'
+
+    def get_object(self):
+        post = super().get_object()
+        if not post.is_published and self.request.user != post.author:
+            raise Http404("Post not found")
+        return post
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = CommentForm()
+        # context['post'] = self.post
+        context['comments'
+                ] = Comment.objects.select_related('author'
+                                                   ).filter(post=self.object)
+        return context
+
+    def dispatch(self, request, *args, **kwargs):
+        self.post = get_object_or_404(
+            Post,
+            pk=kwargs['pk'],
+            is_published=True,
+            category__is_published=True,
+            pub_date__lte=timezone.now()
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+
+class CategoryListView(PostMixin, ListView):
+    # category = None
+    model = Post
+    template_name = 'blog/category.html'
+    context_object_name = 'page_obj'
+    # context_object_name = 'post_list'
+    paginate_by = PAGES
+    ordering = '-pub_date'
+
+    def get_queryset(self):
+        category = get_object_or_404(Category,
+                                     slug=self.kwargs['category_slug'],
+                                     is_published=True)
+        return super().get_queryset().filter(category=category)
+
+    def dispatch(self, request, *args, **kwargs):
+        query_set = Category.objects.filter(
+            slug=kwargs['category_slug'],
+            is_published=True
+        )
+        self.category = get_object_or_404(query_set)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['category'] = self.category
+        return context
+
+
+class CreatePostView(LoginRequiredMixin, CreateView):
+    form_class = PostForm
+    template_name = 'blog/create.html'
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('blog:profile', args=[self.request.user.username])
+
+
+class EditPostView(LoginRequiredMixin, UpdateView):
+    model = Post
+    form_class = PostForm
+    template_name = 'blog/create.html'
+
+    def get_object(self):
+        post = super().get_object()
+        if post.author != self.request.user:
+            raise Http404("You are not allowed to edit this post.")
+        return post
+
+    def get_success_url(self):
+        return reverse_lazy('blog:post_detail', args=[self.object.id])
+
+
+class DeletePostView(LoginRequiredMixin, DeleteView):
+    model = Post
+    template_name = 'blog/create.html'
+
+    def get_object(self):
+        post = super().get_object()
+        if post.author != self.request.user:
+            raise Http404("You are not allowed to delete this post.")
+        return post
+
+    def get_success_url(self):
+        return reverse_lazy('blog:index')
+
+
+class AddCommentView(LoginRequiredMixin, CreateView):
+    form_class = CommentForm
+    template_name = 'blog/comment.html'
+    paginate_by = PAGES
+
+    def form_valid(self, form):
+        post = get_object_or_404(Post, id=self.kwargs['post_id'])
+        form.instance.author = self.request.user
+        form.instance.post = post
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('blog:post_detail', args=[self.kwargs['post_id']])
+
+
+class EditCommentView(LoginRequiredMixin, UpdateView):
+    model = Comment
+    form_class = CommentForm
+    template_name = 'blog/comment.html'
+
+    def get_object(self):
+        comment = super().get_object()
+        if comment.author != self.request.user:
+            raise Http404("You are not allowed to edit this comment.")
+        return comment
+
+    def get_success_url(self):
+        return reverse_lazy('blog:post_detail', args=[self.object.post.id])
+
+
+class DeleteCommentView(LoginRequiredMixin, DeleteView):
+    model = Comment
+    template_name = 'blog/comment.html'
+
+    def get_object(self):
+        comment = super().get_object()
+        if comment.author != self.request.user:
+            raise Http404("You are not allowed to delete this comment.")
+        return comment
+
+    def get_success_url(self):
+        return reverse_lazy('blog:post_detail', args=[self.object.post.id])
+
+
+class ProfileView(ListView):
+    template_name = 'blog/profile.html'
+    context_object_name = 'page_obj'
+    paginate_by = PAGES
+
+    def get_queryset(self):
+        profile = get_object_or_404(User, username=self.kwargs['username'])
+        if self.request.user != profile:
+            return Post.objects.filter(
+                author=profile,
+                is_published=True,
+                category__is_published=True,
+                pub_date__lte=timezone.now()
+            )
+        return Post.objects.filter(author=profile)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['profile'
+                ] = get_object_or_404(User, username=self.kwargs['username'])
+        return context
+
+
+class EditProfileView(LoginRequiredMixin, UpdateView):
+    model = User
+    form_class = UserForm
+    template_name = 'blog/user.html'
+
+    def get_object(self):
+        return get_object_or_404(User, username=self.request.user.username)
+
+    def get_success_url(self):
+        return reverse_lazy('blog:profile', args=[self.request.user.username])
+
+
+class RegistrationView(CreateView):
+    template_name = 'registration/registration_form.html'
+    # form_class = UserCreationForm
+    form_class = UserRegistrationForm
+    success_url = reverse_lazy('blog:index')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        send_mail(
+            'Добро пожаловать!',
+            'Спасибо за регистрацию на нашем сайте.',
+            'from@example.com',
+            [form.cleaned_data['email']],
+        )
+
+        return response
+
+
+class PasswordResetEmailView(PasswordResetView):
+
+    def form_valid(self, form):  # , **kwargs):
+        response = super().form_valid(form)
+        # context = self.get_context_data(form=form, **kwargs)
+
+        email = form.cleaned_data.get('email')
+        if email:
+            send_mail(
+                subject='Сброс пароля',
+                message='Пользователь запросил сброс пароля. ' +
+                'Если это были не вы, обратитесь к администратору.',
+                from_email='admin@example.com',
+                recipient_list=[email, ],
+            )
+        else:
+            response = super().form_invalid()
+
+        return response
