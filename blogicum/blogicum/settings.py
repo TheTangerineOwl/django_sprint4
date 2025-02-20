@@ -44,9 +44,9 @@ LOGIN_REDIRECT_URL = 'blog:index'
 
 LOGIN_URL = 'login'
 
-# CSRF_FAILURE_VIEW = 'pages.views.handle403csrf'
-from pages.views import Custom403CSRFView
-CSRF_FAILURE_VIEW = Custom403CSRFView.as_view()
+CSRF_FAILURE_VIEW = 'pages.views.handle403csrf'
+# from pages.views import Custom403CSRFView
+# CSRF_FAILURE_VIEW = 'pages.views.Custom403CSRFView.as_view'
 
 
 # Application definition

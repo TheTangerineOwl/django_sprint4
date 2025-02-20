@@ -13,16 +13,16 @@ from django.views.generic import TemplateView
 #     return render(request, template)
 
 
-# def handle404(request, exception):
-#     return render(request, 'pages/404.html', status=404)
+def handle404(request, exception):
+    return render(request, 'pages/404.html', status=404)
 
 
-# def handle403csrf(request, reason=''):
-#     return render(request, 'pages/403csrf.html', status=403)
+def handle403csrf(request, reason=''):
+    return render(request, 'pages/403csrf.html', status=403)
 
 
-# def handle500(request):
-#     return render(request, 'pages/500.html', status=500)
+def handle500(request):
+    return render(request, 'pages/500.html', status=500)
 
 
 class AboutView(TemplateView):
@@ -33,28 +33,28 @@ class RulesView(TemplateView):
     template_name = 'pages/rules.html'
 
 
-class Custom404View(TemplateView):
-    template_name = 'pages/404.html'
+# class Custom404View(TemplateView):
+#     template_name = 'pages/404.html'
 
-    def get(self, request, *args, **kwargs):
-        response = super().get(request, *args, **kwargs)
-        response.status_code = 404
-        return response
-
-
-class Custom403CSRFView(TemplateView):
-    template_name = 'pages/403csrf.html'
-
-    def get(self, request, *args, **kwargs):
-        response = super().get(request, *args, **kwargs)
-        response.status_code = 403
-        return response
+#     def get(self, request, *args, **kwargs):
+#         response = super().get(request, *args, **kwargs)
+#         response.status_code = 404
+#         return response
 
 
-class Custom500View(TemplateView):
-    template_name = 'pages/500.html'
+# class Custom403CSRFView(TemplateView):
+#     template_name = 'pages/403csrf.html'
 
-    def get(self, request, *args, **kwargs):
-        response = super().get(request, *args, **kwargs)
-        response.status_code = 500
-        return response
+#     def get(self, request, *args, **kwargs):
+#         response = super().get(request, *args, **kwargs)
+#         response.status_code = 403
+#         return response
+
+
+# class Custom500View(TemplateView):
+#     template_name = 'pages/500.html'
+
+#     def get(self, request, *args, **kwargs):
+#         response = super().get(request, *args, **kwargs)
+#         response.status_code = 500
+#         return response
