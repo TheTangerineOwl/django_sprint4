@@ -2,7 +2,6 @@
 
 from django.db import models
 from django.contrib.auth import get_user_model
-# from django.utils import timezone
 
 
 # Получение модели пользователя.
@@ -122,7 +121,7 @@ class Post(models.Model):
 
 
 class Comment(models.Model):
-    """M."""
+    """Mодель, описывающая комментарий в блоге."""
 
     text = models.TextField('Текст комментария')
     post = models.ForeignKey(
@@ -131,8 +130,14 @@ class Comment(models.Model):
         verbose_name='Комментарий',
         related_name='comments',
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(
+        verbose_name='Время создания',
+        auto_now_add=True
+    )
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        verbose_name='Автор'
+    )
 
     class Meta:
         verbose_name = 'комментарий'

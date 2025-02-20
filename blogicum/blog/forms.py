@@ -1,3 +1,5 @@
+"""Формы для взаимодействия в блоге."""
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
@@ -5,6 +7,7 @@ from .models import Post, Comment, User
 
 
 class PostForm(forms.ModelForm):
+    """Форма для создания и редактирования поста в блоге."""
 
     class Meta:
         model = Post
@@ -18,6 +21,7 @@ class PostForm(forms.ModelForm):
 
 
 class UserForm(forms.ModelForm):
+    """Форма для профиля пользователя."""
 
     class Meta:
         model = User
@@ -25,6 +29,7 @@ class UserForm(forms.ModelForm):
 
 
 class UserRegistrationForm(UserCreationForm):
+    """Форма для регистрации."""
 
     class Meta:
         model = User
@@ -32,6 +37,7 @@ class UserRegistrationForm(UserCreationForm):
 
 
 class CommentForm(forms.ModelForm):
+    """Форма для создания и редактирования комментария."""
 
     class Meta:
         model = Comment

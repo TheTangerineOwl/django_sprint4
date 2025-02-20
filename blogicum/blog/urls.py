@@ -4,6 +4,7 @@ from django.urls import path
 
 from . import views
 
+
 app_name = 'blog'
 
 urlpatterns = [
@@ -20,11 +21,6 @@ urlpatterns = [
     path('posts/<int:post_id>/delete_comment/<int:comment_id>/',
          views.DeleteCommentView.as_view(),
          name='delete_comment'),
-    # path('posts/<int:post_id>/edit_comment/<int:comment_id>/',
-    #      views.edit_comment, name='edit_comment'),
-    # path('posts/<int:post_id>/delete_comment/<int:comment_id>/',
-    #      views.delete_comment, name='delete_comment'),
-
 
     path('posts/<int:post_id>/',
          views.PostDetailView.as_view(),
@@ -40,25 +36,10 @@ urlpatterns = [
          views.DeletePostView.as_view(),
          name='delete_post'),
 
-
-    # #############################################
     path('profile/edit/',
          views.EditProfileView.as_view(), name='edit_profile'),
     path('profile/<str:username>/',
          views.ProfileView.as_view(), name='profile'),
 
-    # # Шаблон URL для страницы по конкретной категории.
-    # path(
-    #     'category/<slug:category>/',
-    #     views.CategoryListView.as_view(),
-    #     name='category_posts'
-    # ),
-    # # Шаблон URL для отдельного поста.
-    # path(
-    #     'posts/<int:pk>/',
-    #     views.PostDetailView.as_view(),
-    #     name='post_detail'
-    # ),
-    # Шаблон URL для главной страницы блога.
     path('', views.PostListView.as_view(), name="index"),
 ]
