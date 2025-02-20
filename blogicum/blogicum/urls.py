@@ -21,11 +21,19 @@ from django.urls import include, path, reverse_lazy
 from django.views.generic.edit import CreateView
 from django.core.mail import send_mail
 
+# from debug_toolbar.toolbar import debug_toolbar_urls
+# import debug_toolbar
+
 from blog.views import RegistrationView, PasswordResetEmailView
 
-handler404 = 'pages.views.handle404'
-handler500 = 'pages.views.handle500'
-handler403csrf = 'pages.view.handle403csrf'
+from pages.views import Custom403CSRFView, Custom404View, Custom500View
+
+# handleher404 = 'pages.views.handle404'
+# handlehter500 = 'pages.views.handle500'
+# handlehter403csrf = 'pages.view.handle403csrf'
+handler404 = Custom404View.as_view()
+handler500 = Custom500View.as_view()
+handler403csrf = Custom403CSRFView.as_view()
 
 app_name = 'blogicum'
 
@@ -47,4 +55,10 @@ urlpatterns = [
     path('pages/', include('pages.urls')),
     path('admin/', admin.site.urls),
     path('', include('blog.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+# urlpatterns += debug_toolbar_urls()
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns += (path('__debug__/', include(debug_toolbar.urls)),)    
+    urlpatterns += static(settings.MEDIA_URL, 
+                          document_root=settings.MEDIA_ROOT)

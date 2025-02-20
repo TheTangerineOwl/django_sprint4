@@ -16,7 +16,7 @@ from .models import Category, Post, Comment, User
 from .forms import CommentForm, PostForm, UserForm, UserRegistrationForm
 
 
-PAGES = 5
+PAGES = 10
 
 
 class PostMixin:
@@ -34,25 +34,35 @@ class PostMixin:
 class PostListView(PostMixin, ListView):
 
     model = Post
-
     template_name = 'blog/index.html'
-    context_object_name = 'page_obj'
+    context_object_name = 'post_list'    
     paginate_by = PAGES
 
     def get_queryset(self):
         return super().get_queryset().filter(category__is_published=True)
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # context['page_obj'] = context['object_list']
-        # context['page_obj'] = self.get_queryset()
-        # context['post_count'] = self.get_queryset().count()
-        return context
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     # context['post_count'] = self.get_queryset().count()
+    #     # if context['object_list']:
+    #         # print(context['object_list'])
+    #     # con = {'':0}
+    #     #context.pop('object_list')
+    #     # if context['object_list']:
+    #     #     print(context['object_list'])
+    #     print(context['post_list'])
+    #     print(context['page_obj'])
+    #     print(context['paginator'])
+    #     # print(context['page_obj'].has_other_pages)
+    #     # context['page_obj'] = context['object_list']
+    #     # context['page_obj'] = self.get_queryset()
+    #     # context['post_count'] = self.get_queryset().count()
+    #     return context
 
 
 class PostDetailView(DetailView):
     model = Post
-    # post = None
+    post = None
     template_name = 'blog/detail.html'
     context_object_name = 'post'
 
@@ -86,7 +96,7 @@ class CategoryListView(PostMixin, ListView):
     # category = None
     model = Post
     template_name = 'blog/category.html'
-    context_object_name = 'page_obj'
+    context_object_name = 'post_list'
     # context_object_name = 'post_list'
     paginate_by = PAGES
     ordering = '-pub_date'
@@ -155,7 +165,7 @@ class DeletePostView(LoginRequiredMixin, DeleteView):
 class AddCommentView(LoginRequiredMixin, CreateView):
     form_class = CommentForm
     template_name = 'blog/comment.html'
-    paginate_by = PAGES
+    # paginate_by = PAGES
 
     def form_valid(self, form):
         post = get_object_or_404(Post, id=self.kwargs['post_id'])
@@ -196,21 +206,27 @@ class DeleteCommentView(LoginRequiredMixin, DeleteView):
         return reverse_lazy('blog:post_detail', args=[self.object.post.id])
 
 
-class ProfileView(ListView):
-    template_name = 'blog/profile.html'
-    context_object_name = 'page_obj'
+class ProfileView(PostMixin, ListView):
+
     paginate_by = PAGES
+    model = Post
+
+    template_name = 'blog/profile.html'
+    context_object_name = 'post_list'
 
     def get_queryset(self):
         profile = get_object_or_404(User, username=self.kwargs['username'])
         if self.request.user != profile:
-            return Post.objects.filter(
-                author=profile,
-                is_published=True,
-                category__is_published=True,
-                pub_date__lte=timezone.now()
-            )
-        return Post.objects.filter(author=profile)
+            return super().get_queryset().filter(author=profile,
+                                                 category__is_published=True)
+        # return Post.objects.filter(author=profile)
+        return Post.objects.select_related(
+            'category',
+            'location',
+            'author'
+        ).annotate(comment_count=Count('comments')).filter(
+            author=profile
+        ).order_by('-pub_date')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -25,7 +25,13 @@ SECRET_KEY = 'django-insecure-gs@7azqekqf^&pnk1=$q7xdwokq$!2p50n65u=-&fu89r3jn#d
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+]
+
+INTERNAL_IPS = [
+    "127.0.0.1"
+]
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
@@ -38,7 +44,9 @@ LOGIN_REDIRECT_URL = 'blog:index'
 
 LOGIN_URL = 'login'
 
-CSRF_FAILURE_VIEW = 'pages.views.handle403csrf'
+# CSRF_FAILURE_VIEW = 'pages.views.handle403csrf'
+from pages.views import Custom403CSRFView
+CSRF_FAILURE_VIEW = Custom403CSRFView.as_view()
 
 
 # Application definition
@@ -53,11 +61,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_bootstrap5',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
+    "debug_toolbar.middleware.DebugToolbarMiddleware",    
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
